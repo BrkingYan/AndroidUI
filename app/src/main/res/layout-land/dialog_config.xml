@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/background_dialog">
+    <!--提示框标题-->
+    <TextView
+        android:id="@+id/config_dialog_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:layout_gravity="center"
+        android:textSize="20sp"
+        android:paddingTop="10dp"/>
+    <!-- 提示框提示信息-->
+    <TextView
+        android:id="@+id/tip_info_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:layout_gravity="center"/>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+        <!--第一个输入框Label-->
+        <TextView
+            android:id="@+id/first_label_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <!--第一个输入框-->
+        <EditText
+            android:id="@+id/config_editText_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="5"/>
+        <!--第二个输入框Label-->
+        <TextView
+            android:id="@+id/second_label_text_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+        <!--第二个输入框-->
+        <EditText
+            android:id="@+id/config_editText_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="5"/>
+    </LinearLayout>
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_gravity="center">
+        <!--取消按钮-->
+        <Button
+            android:id="@+id/config_dismiss_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="取消"/>
+        <!--确定按钮-->
+        <Button
+            android:id="@+id/config_sure_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="确定"/>
+    </LinearLayout>
+</LinearLayout>

@@ -1,22 +1,16 @@
 package com.example.yy.ui;
 
-import android.app.Dialog;
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.support.v7.app.AlertDialog;
+import android.graphics.Matrix;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.LayoutInflater;
+import android.view.DragEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewDebug;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -34,15 +28,35 @@ import java.util.Map;
 * */
 public class MainActivity extends AppCompatActivity {
 
+    //参数信息
+
+    //船体旋转的角度
+    private double boatAngleRadian = 0; //弧度
+    private float boatAngle = (float) (boatAngleRadian / Math.PI )* 180;  //角度
+
+/*******************************/
+    private int boatStartX;
+    private int boatStartY;
+
+    private float boatCenterX;
+    private float boatCenterY;
+
+//    private MyConfigDialog boatMoveDialog;
+
+
     // 视图成员
     private ImageView mAnchor1View;
     private ImageView mAnchor2View;
     private ImageView mAnchor3View;
     private ImageView mAnchor4View;
 
-    private BoatView mBoatLayout;//是一个layout 包括船体和绳盘
-    private ImageView mBoatView;//船体
-    private ImageView mRopeDialView;//绳盘
+
+    private BoatView mBoatView;//可旋转的View船体视图对象
+    private ImageView mBoatShadowView;// 阴影船
+
+
+    private RopeDialView mRopeDialView;//绳盘
+    private RelativeLayout mPaintLayout;//整个画图区域的layout
 
     private TextView mAnchor1LongitudeView;
     private TextView mAnchor2LongitudeView;
@@ -76,6 +90,8 @@ public class MainActivity extends AppCompatActivity {
     private List<Float> anchor4ScaleList;
     private List<Float> boatScaleList;
     private List<Float> ropeDialScaleList;
+    private List<Integer> paintLayoutScaleList;
+
     //这些暂时用来存放模型，用于在PaintBoard中读取绘图数据
     private static Map<Integer,Anchor> mAnchorMap;
 
@@ -94,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String anchorListPreferencesFileName = "anchor_bank";
     private static final String anchorListPreferencesBankKey = "anchors";
 
+    private Button mButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -102,6 +120,11 @@ public class MainActivity extends AppCompatActivity {
         // 初始化视图成员
         findViewByIds();
 
+        mButton = findViewById(R.id.test_button);
+
+
+
+
         //给anchorView编号
         IdAnchorViewMap = new HashMap<>();
         IdAnchorViewMap.put(1,mAnchor1View);
@@ -109,15 +132,18 @@ public class MainActivity extends AppCompatActivity {
         IdAnchorViewMap.put(3,mAnchor3View);
         IdAnchorViewMap.put(4,mAnchor4View);
 
+
         //初始化模型成员
         initModelsOnBoat();//创建它们的对象，并初始化
 
+
+        setListenerForBoat();
 
         // 从preferences文件中获取之前设置的anchor经纬度信息
         getAnchorDataFromPreferencesFile();
 
 
-        // 更新视图的UI坐标数据
+        // 更新视图的UI坐标数据 ，里面有post方法
         updateImageViewUICoordinates();
 
         // 为anchor视图添加按键监听器
@@ -146,7 +172,9 @@ public class MainActivity extends AppCompatActivity {
         };
         mBoatVIew.setOnTouchListener(onTouchListener);*/
         /************************ for test ******************************/
+
     }
+
 
     // 初始化视图
     private void findViewByIds(){
@@ -154,6 +182,7 @@ public class MainActivity extends AppCompatActivity {
         mAnchor2View = findViewById(R.id.anchor2);
         mAnchor3View = findViewById(R.id.anchor3);
         mAnchor4View = findViewById(R.id.anchor4);
+
 
         mAnchor1LongitudeView = findViewById(R.id.anchor1_longitude);
         mAnchor2LongitudeView = findViewById(R.id.anchor2_longitude);
@@ -165,9 +194,21 @@ public class MainActivity extends AppCompatActivity {
         mAnchor3LatitudeView = findViewById(R.id.anchor3_latitude);
         mAnchor4LatitudeView = findViewById(R.id.anchor4_latitude);
 
-        mBoatLayout = findViewById(R.id.my_boat_layout);
-        mBoatView = findViewById(R.id.boat_view);
+        mBoatView = findViewById(R.id.my_boat_view);
+        mBoatShadowView = findViewById(R.id.my_boat_shadow);
+
         mRopeDialView = findViewById(R.id.rope_dial_view);
+
+        mPaintLayout = findViewById(R.id.paint_layout);
+    }
+
+    //该方法用于旋转UI中的View，转了
+    private void rotateViews(float boatAngle,float pivotX,float pivotY){
+        mBoatView.setRotation(boatAngle);
+        mRopeDialView.setRotation(boatAngle);
+        mBoatShadowView.setRotation(boatAngle);
+        Log.d(TAG,"rope dial layout  axis : " + mRopeDialView.getLeft());
+
     }
 
     //将anchor装入list准备保存到文件中
@@ -218,35 +259,30 @@ public class MainActivity extends AppCompatActivity {
         updateAnchorGPSTextView();
     }
 
-    private void updateRopeNode(List<Float> ropeDialScaleList){
-        float x = mRopeNodeBoard.getX();
-        float y = mRopeNodeBoard.getY();
-        float width = ropeDialScaleList.get(0);
-        float height = ropeDialScaleList.get(1);
+    private void updateRopeNode(double boatAngle,float centerX,float centerY,float sideLength){
+        Log.d(TAG,"centerX : " + centerX + "... centerY : " + centerY + "... sideLength : " + sideLength);
+        float node1X = centerX - sideLength / 2 + sideLength / 2 * (float) (1 - Math.cos(boatAngle) + Math.sin(boatAngle));
+        float node1Y = centerY - sideLength / 2 + sideLength / 2 * (float) (1 - Math.cos(boatAngle) - Math.sin(boatAngle));
+        Log.d(TAG,"cosAngle : " + Math.cos(boatAngle));
 
-        float xNode1 = x - width / 2;
-        float yNode1 = y - height / 2;
-        mNode1.setX(xNode1);
-        mNode1.setY(yNode1);
-        Log.d(TAG,"node 1 (" + mNode1.getX() + "," + mNode1.getY() + ")");
-
-        float xNode2 = x + width / 2;
-        float yNode2 = y - height / 2;
-        mNode2.setX(xNode2);
-        mNode2.setY(yNode2);
-        Log.d(TAG,"node 2 (" + mNode2.getX() + "," + mNode2.getY() + ")");
-
-        float xNode3 = x + width / 2;
-        float yNode3 = y + height / 2;
-        mNode3.setX(xNode3);
-        mNode3.setY(yNode3);
-        Log.d(TAG,"node 3 (" + mNode3.getX() + "," + mNode3.getY() + ")");
-
-        float xNode4 = x - width / 2;
-        float yNode4 = y + height / 2;
-        mNode4.setX(xNode4);
-        mNode4.setY(yNode4);
-        Log.d(TAG,"node 4 (" + mNode4.getX() + "," + mNode4.getY() + ")");
+        Log.d(TAG,"node1 : (" + node1X + "," + node1Y + ")");
+        mNode1.setX(node1X);
+        mNode1.setY(node1Y);
+        float node2X = centerX + sideLength / 2 + sideLength / 2 * (float) (-1 + Math.cos(boatAngle) + Math.sin(boatAngle));
+        float node2Y = centerY - sideLength / 2 + sideLength / 2 * (float) (1 - Math.cos(boatAngle) + Math.sin(boatAngle));
+        Log.d(TAG,"node2 : (" + node2X + "," + node2Y + ")");
+        mNode2.setX(node2X);
+        mNode2.setY(node2Y);
+        float node3X = centerX + sideLength / 2 - sideLength / 2 * (float) (1 - Math.cos(boatAngle) + Math.sin(boatAngle));
+        float node3Y = centerY + sideLength / 2 - sideLength / 2 * (float) (1 - Math.cos(boatAngle) - Math.sin(boatAngle));
+        Log.d(TAG,"node3 : (" + node3X + "," + node3Y + ")");
+        mNode3.setX(node3X);
+        mNode3.setY(node3Y);
+        float node4X = centerX - sideLength / 2 - sideLength / 2 * (float) (-1 + Math.cos(boatAngle) + Math.sin(boatAngle));
+        float node4Y = centerY + sideLength / 2 - sideLength / 2 * (float) (1 - Math.cos(boatAngle) + Math.sin(boatAngle));
+        Log.d(TAG,"node4 : (" + node4X + "," + node4Y + ")");
+        mNode4.setX(node4X);
+        mNode4.setY(node4Y);
 
     }
 
@@ -322,24 +358,62 @@ public class MainActivity extends AppCompatActivity {
                 float viewHeight = mBoatView.getHeight();
                 boatScaleList.add(viewHeight);
 
-                setCoordinatesForPackedModels(mBoat,mBoatView,boatScaleList);
+
             }
         });
         mRopeDialView.post(new Runnable() {
             @Override
             public void run() {
-                float viewWidth = mRopeDialView.getWidth();
-                ropeDialScaleList.add(viewWidth);
-                float viewHeight = mRopeDialView.getHeight();
-                ropeDialScaleList.add(viewHeight);
+                float ropeDialWidth = mRopeDialView.getWidth();
+                ropeDialScaleList.add(ropeDialWidth);
+                float ropeDialHeight = mRopeDialView.getHeight();
+                ropeDialScaleList.add(ropeDialHeight);
 
-                setCoordinatesForPackedModels(mRopeNodeBoard,mRopeDialView,ropeDialScaleList);
+                float ropeDialX1 = mRopeDialView.getLeft();
+                float ropeDialY1 = mRopeDialView.getTop();
 
-                // 更新船上绳子节点
-                updateRopeNode(ropeDialScaleList);
+                float ropeDialCenterX = ropeDialX1 + ropeDialWidth / 2;
+                float ropeDialCenterY = ropeDialY1 + ropeDialHeight / 2;
+
+                Log.d(TAG,"rope dial 1 :  (" + ropeDialX1 + "," + ropeDialY1 + ")");
+                Log.d(TAG,"rope dial width : " + ropeDialWidth + ", rope dial height : " + ropeDialHeight);
+                Log.d(TAG,"rope dial center : (" + ropeDialCenterX + "," + ropeDialCenterY + ")");
+
+                updateRopeNode(boatAngleRadian,ropeDialCenterX,ropeDialCenterY,ropeDialWidth);
+                rotateViews(boatAngle,ropeDialCenterX,ropeDialCenterY);
+
+
+
             }
         });
 
+        mBoatView.post(new Runnable() {
+            @Override
+            public void run() {
+                float boat1CoordinateX = mBoatView.getLeft();
+                float boat1CoordinateY = mBoatView.getTop();
+                float boatWidth = mBoatView.getWidth();
+                float boatHeight = mBoatView.getHeight();
+                float boatCoordinateX = boat1CoordinateX + boatWidth / 2;
+                float boatCoodinateY = boat1CoordinateY + boatHeight / 2;
+                boatCenterX = boatCoordinateX;
+                boatCenterY = boatCoodinateY;
+                Log.d(TAG,"boat 1 : (" + boat1CoordinateX + "," + boat1CoordinateY + ")");
+                Log.d(TAG,"boat width : " + boatWidth);
+                Log.d(TAG,"boat height : " + boatHeight);
+                Log.d(TAG,"boat center : (" + boatCoordinateX + "," + boatCoodinateY + ")");
+            }
+        });
+
+        mPaintLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                int layoutX = mPaintLayout.getWidth();
+                int layoutY = mPaintLayout.getHeight();
+                paintLayoutScaleList.add(layoutX);
+                paintLayoutScaleList.add(layoutY);
+            }
+        });
     }
 
     //此方法根据anchor的数据，更新anchor的GPS坐标数据显示
@@ -384,46 +458,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-/*
- *  此方法用于计算和记录复杂模型视图的坐标位置
- *
- */
-    private void setCoordinatesForPackedModels(Model model,View view,List<Float> scaleList){
-        //获取视图左上角在InnerLayout上的坐标
-        float xxOnInnerLayout = view.getLeft();
-        float yyOnInnerLayout = view.getTop();
-        float zzOnInnerLayout = view.getBottom();
 
-        //获取InnerLayout左上角在OuterLayout上的位置坐标
-        float layoutX = mBoatLayout.getLeft();
-        float layoutY = mBoatLayout.getTop();
-        float layoutRight = mBoatLayout.getRight();
-        float layoutBottom = mBoatLayout.getBottom();
-        //获取InnerLayout的尺寸
-        float layoutWidth = layoutRight - layoutX;
-        float layoutHeight = layoutBottom - layoutY;
-        //将视图左上角的坐标系由InnerLayout转换为OuterLayout
-        float xxOnOuterLayout = xxOnInnerLayout + layoutX;
-        float yyOnOuterLayout = yyOnInnerLayout + layoutY;
-
-        float viewWidth = scaleList.get(0);
-        float viewHeight = scaleList.get(1);
-
-        // 转化为视图质心在画布上的坐标
-        float xOnOuterLayout = xxOnOuterLayout + viewWidth / 2;
-        float yOnOuterLayout = yyOnOuterLayout + viewHeight / 2;
-
-        model.setX(xOnOuterLayout);
-        model.setY(yOnOuterLayout);
-
-        Log.d(TAG,"[" + xxOnInnerLayout + "," + yyOnInnerLayout + "]");
-        Log.d(TAG,"width : " + viewWidth);
-        Log.d(TAG,"height : " + viewHeight);
-        Log.d(TAG,"[" + xOnOuterLayout + "," + yOnOuterLayout + "]");
-
-        Log.d(TAG,"heigght :" + "" + (zzOnInnerLayout - yyOnInnerLayout));
-        Log.d(TAG,"------------------------");
-    }
 
 
     private void addOnClickListenerForAnchorViews(final Anchor anchor){
@@ -432,13 +467,17 @@ public class MainActivity extends AppCompatActivity {
         view.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                final AnchorConfigDialog configDialog = new AnchorConfigDialog(MainActivity.this);
+                final MyConfigDialog configDialog = new MyConfigDialog(MainActivity.this);
+                //TODO 设置提示框格式
                 configDialog.setDialogTitle("anchor " + anchorId + "  GPS setting");
+                configDialog.setDialogTipInfo("请输入GPS坐标");
+                configDialog.setFirstLabel("经度: ");
+                configDialog.setSecondLabel("纬度: ");
                 // 让configDialog 显示修改之前的GPS坐标
                 configDialog.setGPSTextBeforeConfig("" + anchor.getLongitude(),
                         "" + anchor.getLatitude());
                 // 让configDialog给自己的确定按钮加上封装过的监听器
-                configDialog.setSureButtonOnClickListener(new AnchorConfigDialog.ButtonOnClickListener() {
+                configDialog.setSureButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
                     @Override
                     public void buttonOnClick() {
                         //ToDo 更新经纬度显示视图
@@ -472,7 +511,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
                 // 让configDialog给自己的取消按钮加上监听器
-                configDialog.setCancelButtonOnClickListener(new AnchorConfigDialog.ButtonOnClickListener() {
+                configDialog.setCancelButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
                     @Override
                     public void buttonOnClick() {
                         configDialog.dismiss();
@@ -514,6 +553,7 @@ public class MainActivity extends AppCompatActivity {
         anchor4ScaleList = new ArrayList<>();
         boatScaleList = new ArrayList<>();
         ropeDialScaleList = new ArrayList<>();
+        paintLayoutScaleList = new ArrayList<>();
 
     }
 
@@ -521,7 +561,147 @@ public class MainActivity extends AppCompatActivity {
         return mBoat;
     }
 
+
     public static Map<Integer, Anchor> getmAnchorMap() {
         return mAnchorMap;
+    }
+
+
+    /*
+    *  给船体加上长按监听
+    * */
+    private void setListenerForBoat(){
+
+        //设置长按监听
+        ;mBoatView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                //长按之后开始拖拽
+                mBoatView.startDrag(null,new View.DragShadowBuilder(v),mPaintLayout,0);
+                Log.d(TAG,"long click run");
+                return true;
+            }
+        });
+
+        /*
+        * 给画布添加拖拽监听
+        * */
+        mPaintLayout.setOnDragListener(new View.OnDragListener() {
+            @Override
+            public boolean onDrag(View v, DragEvent event) {
+                //Log.d(TAG,"drag event run");
+                switch (event.getAction()) {
+                    //开始拖动时
+                    case DragEvent.ACTION_DRAG_STARTED: {
+                        Log.e(TAG, "View开始被拖动");
+                        Log.d(TAG,"开始处X : " + event.getX() );
+                        Log.d(TAG,"开始处Y : " + event.getY() );
+                        break;
+                    }
+                    case DragEvent.ACTION_DRAG_LOCATION:{
+                        /*Log.e(TAG,"运动时X : " + event.getX());
+                        Log.e(TAG,"运动时Y : " + event.getY());*/
+                        //Log.e(TAG,"View 进入目标区域");
+                    }
+                    //拖动结束时
+                    case DragEvent.ACTION_DRAG_ENDED: {
+                        //Log.e(TAG, "View拖动结束");
+                        //mBoatView.setVisibility(View.INVISIBLE);
+                        break;
+                    }
+                    case DragEvent.ACTION_DROP:{
+                        //TODO 显示幽灵船
+                        mBoatShadowView.setVisibility(View.VISIBLE);
+                        mBoatView.setVisibility(View.INVISIBLE);
+                        Log.e(TAG,"View被放下");
+                        Log.d(TAG,"放下处 x : " + event.getX());
+                        Log.d(TAG,"放下处 y : " + event.getY());
+                        int tranX = (int) (event.getX() - boatCenterX);
+                        int tranY = (int) (event.getY() - boatCenterY);
+                        mBoatShadowView.setTranslationX(tranX);
+                        mBoatShadowView.setTranslationY(tranY);
+
+                        if (mBoatView.getRight() > paintLayoutScaleList.get(0) || mBoatView.getLeft() <= 0 || mBoatView.getTop() <= 0 || mBoatView.getBottom() > paintLayoutScaleList.get(1)){
+                            Toast.makeText(MainActivity.this,"船体只能放置在地图内",Toast.LENGTH_SHORT).show();
+                        }else {
+                            final MyConfigDialog boatMoveDialog = new MyConfigDialog(MainActivity.this);
+                            boatMoveDialog.setDialogTitle("船体移动设置");
+                            boatMoveDialog.setDialogTipInfo("请输入移动距离");
+                            if (tranX >= 0){
+                                boatMoveDialog.setFirstLabel("向右: ");
+                            }else {
+                                boatMoveDialog.setFirstLabel("向左: ");
+                            }
+                            if (tranY >= 0){
+                                boatMoveDialog.setSecondLabel("向下: ");
+                            }else {
+                                boatMoveDialog.setSecondLabel("向上: ");
+                            }
+                            boatMoveDialog.setSureButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
+                                @Override
+                                public void buttonOnClick() {
+                                    boatMoveDialog.dismiss();
+                                }
+                            });
+
+                            boatMoveDialog.setCancelButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
+                                @Override
+                                public void buttonOnClick() {
+                                    boatMoveDialog.dismiss();
+                                }
+                            });
+                            boatMoveDialog.show();
+                        }
+
+                        break;
+                    }
+                    //拖动完成时
+                    case DragEvent.ACTION_DRAG_EXITED: {
+                        Toast.makeText(MainActivity.this,"船体只能放在地图区域范围内",Toast.LENGTH_SHORT).show();
+                        Log.e(TAG, "View拖动退出");
+
+                        break;
+                    }
+                    default: {
+                        break;
+                    }
+                }
+                return true;
+            }
+        });
+
+        /*
+        * 给船体添加双击监听
+        * */
+        mBoatView.setOnTouchListener(new OnDoubleClickListener(new OnDoubleClickListener.DoubleOnClickListener() {
+            @Override
+            public void onDoubleClick() {
+                Log.d(TAG,"双击成功");
+                //TODO 弹出提示框
+                final MyConfigDialog boatRotateDialog = new MyConfigDialog(MainActivity.this);
+                boatRotateDialog.setDialogTitle("船体旋转设置");
+                boatRotateDialog.setDialogTipInfo("请输入船体旋转角度");
+                boatRotateDialog.setFirstLabel("角度: ");
+                boatRotateDialog.setSecondEditTextInvisible();
+                boatRotateDialog.setSureButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
+                    @Override
+                    public void buttonOnClick() {
+                        boatRotateDialog.updateBoatRotationState(mBoatShadowView);
+                        boatRotateDialog.dismiss();
+                        mBoatShadowView.setVisibility(View.VISIBLE);
+                    }
+                });
+
+                boatRotateDialog.setCancelButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
+                    @Override
+                    public void buttonOnClick() {
+                        boatRotateDialog.dismiss();
+                    }
+                });
+                boatRotateDialog.show();
+            }
+        }));
+
+
     }
 }

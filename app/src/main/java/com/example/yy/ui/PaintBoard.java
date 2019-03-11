@@ -4,9 +4,11 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,10 +31,12 @@ public class PaintBoard extends View {
     private Anchor mAnchor3;
     private Anchor mAnchor4;
 
+    private RelativeLayout boatLayout;
+
     private static final String TAG = "PaintBoard";
 
 
-    public PaintBoard(Context context,AttributeSet attr) {
+    public PaintBoard(Context context, AttributeSet attr) {
         super(context,attr);
 
         //初始化画笔
@@ -46,6 +50,7 @@ public class PaintBoard extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
 
         // 从MainActivity中获取数据容器
         //获取船

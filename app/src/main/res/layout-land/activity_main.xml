@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:background="@color/colorMapLayout">
     <!-- 标题 -->
@@ -233,11 +233,21 @@
                     android:layout_centerInParent="true">
                     <!-- 整个船体 -->
                     <com.example.yy.ui.BoatView
-                        android:id="@+id/my_boat_layout"
+                        android:id="@+id/my_boat_view"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_centerInParent="true">
-                    </com.example.yy.ui.BoatView>
+                        android:layout_centerInParent="true"
+                        android:background="@mipmap/boat_big"/>
+
+                    <!--幽灵船-->
+                    <ImageView
+                        android:id="@+id/my_boat_shadow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_centerInParent="true"
+                        android:background="@mipmap/boat_big"
+                        android:alpha="0.3"
+                        android:visibility="invisible"/>
                     <!-- 4 个anchor-->
                     <!-- 左上-->
                     <ImageView
@@ -271,13 +281,22 @@
                         android:layout_alignParentRight="true"
                         android:layout_alignParentBottom="true"
                         android:src="@mipmap/circle_icon" />
+
+                    <!-- 自定义画板-->
                     <com.example.yy.ui.PaintBoard
                         android:id="@+id/my_paint_board"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent" />
+                    <!-- 定义一个布局用来显示4个node的视图-->
+                    <com.example.yy.ui.RopeDialView
+                        android:id="@+id/rope_dial_view"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@color/colorPrimaryDark"
+                        android:layout_centerInParent="true"
+                        android:visibility="invisible"/>
                 </RelativeLayout>
             </RelativeLayout>
-
         </LinearLayout>
 
         <!-- 大块2 状态显示区域 -->
@@ -383,6 +402,10 @@
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-
+        <Button
+            android:id="@+id/test_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="button"/>
     </LinearLayout>
     </LinearLayout>
