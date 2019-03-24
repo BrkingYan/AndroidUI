@@ -305,107 +305,136 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingLeft="30dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/display_area_label"
-                android:textSize="20dp"
-                android:layout_gravity="center"/>
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/background_main"
-                android:orientation="vertical">
-                <!-- GPS 显示-->
+                android:orientation="horizontal">
+
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <ImageView
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:src="@mipmap/gps_logo"/>
+                    android:background="@drawable/background_main"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/display_area_label"
+                        android:textSize="20dp"
+                        android:layout_gravity="center"/>
+                    <!-- GPS 显示-->
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:paddingLeft="10dp">
-                        <!-- 经度 -->
+                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:src="@mipmap/gps_logo"/>
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-                            <TextView
+                            android:orientation="vertical"
+                            android:paddingLeft="10dp">
+                            <!-- 经度 -->
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/boat_gps_longitude_label"
-                                android:textSize="18dp"/>
-                            <TextView
+                                android:orientation="horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/boat_gps_longitude_label"
+                                    android:textSize="18dp"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="123"
+                                    android:textSize="18dp"/>
+                            </LinearLayout>
+                            <!-- 纬度 -->
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="123"
-                                android:textSize="18dp"/>
-                        </LinearLayout>
-                        <!-- 纬度 -->
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/boat_gps_latitude_label"
-                                android:textSize="18dp"/>
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="123"
-                                android:textSize="18dp"/>
+                                android:orientation="horizontal">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/boat_gps_latitude_label"
+                                    android:textSize="18dp"/>
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="123"
+                                    android:textSize="18dp"/>
+                            </LinearLayout>
                         </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
-                <!-- 角度 显示-->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="20dp">
-                    <ImageView
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:src="@mipmap/rotation"/>
-                    <TextView
-                        android:id="@+id/boat_rotation_degree"
+                    <!-- 张力 显示-->
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="左偏5°"
-                        android:textSize="18dp"
-                        android:paddingLeft="10dp"/>
-                </LinearLayout>
-                <!-- 张力 显示-->
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingTop="20dp">
-                    <ImageView
-                        android:layout_width="50dp"
-                        android:layout_height="50dp"
-                        android:src="@mipmap/rope"/>
-                    <TextView
-                        android:id="@+id/rope_tension_state"
+                        android:orientation="horizontal"
+                        android:paddingTop="20dp">
+                        <ImageView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:src="@mipmap/rope"/>
+                        <TextView
+                            android:id="@+id/rope_tension_state"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="张力正常"
+                            android:textSize="18dp"
+                            android:paddingLeft="10dp"/>
+                    </LinearLayout>
+                    <!-- 角度 显示-->
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="张力正常"
-                        android:textSize="18dp"
-                        android:paddingLeft="10dp"/>
+                        android:orientation="horizontal"
+                        android:paddingTop="20dp">
+                        <ImageView
+                            android:layout_width="50dp"
+                            android:layout_height="50dp"
+                            android:src="@mipmap/rotation"/>
+                        <TextView
+                            android:id="@+id/boat_rotation_degree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="左偏5°"
+                            android:textSize="18dp"
+                            android:paddingLeft="10dp"/>
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/scalebar"/>
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center">
+                    <ImageView
+                        android:id="@+id/blank"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/blank"
+                        android:layout_centerHorizontal="true"/>
+                    <ImageView
+                        android:id="@+id/degree_pointer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/pointer"
+                        android:layout_centerHorizontal="true"/>
+                </RelativeLayout>
+            </LinearLayout>
+
         </LinearLayout>
-        <Button
-            android:id="@+id/test_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="button"/>
     </LinearLayout>
 </LinearLayout>

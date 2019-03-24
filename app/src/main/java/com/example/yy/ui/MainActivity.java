@@ -1,22 +1,15 @@
 package com.example.yy.ui;
 
-import android.content.SharedPreferences;
-import android.graphics.Canvas;
-import android.graphics.Matrix;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.DragEvent;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,20 +21,17 @@ import java.util.Map;
 * */
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = "MainActivity";
+
     //参数信息
 
     //船体旋转的角度
-    private double boatAngleRadian = 0; //弧度
+    private double boatAngleRadian = Math.PI / 180; //弧度
     private float boatAngle = (float) (boatAngleRadian / Math.PI )* 180;  //角度
-
-/*******************************/
-    private int boatStartX;
-    private int boatStartY;
 
     private float boatCenterX;
     private float boatCenterY;
 
-//    private MyConfigDialog boatMoveDialog;
 
 
     // 视图成员
@@ -49,6 +39,10 @@ public class MainActivity extends AppCompatActivity {
     private ImageView mAnchor2View;
     private ImageView mAnchor3View;
     private ImageView mAnchor4View;
+
+    private ImageView mPointer;
+    private ImageView mBlank;
+    private float mBlankWidth;
 
 
     private BoatView mBoatView;//可旋转的View船体视图对象
@@ -101,12 +95,8 @@ public class MainActivity extends AppCompatActivity {
     //这个用来存放模型，到时候会放入sharedPreferences中
     private List<Anchor> mAnchorList;
 
-    private static final String TAG = "MainActivity";
 
-    // SharedPreferences成员，用来存放之前配置的信息
-    private Gson gsonInMain = new Gson();;
-    private SharedPreferences.Editor anchorListEditor;
-    private SharedPreferences anchorListPreferences;
+    // SharedPreferences设置参数，用来存放之前配置的信息
     private static final String anchorListPreferencesFileName = "anchor_bank";
     private static final String anchorListPreferencesBankKey = "anchors";
 
@@ -121,8 +111,6 @@ public class MainActivity extends AppCompatActivity {
         findViewByIds();
 
         mButton = findViewById(R.id.test_button);
-
-
 
 
         //给anchorView编号
@@ -140,11 +128,14 @@ public class MainActivity extends AppCompatActivity {
         setListenerForBoat();
 
         // 从preferences文件中获取之前设置的anchor经纬度信息
+        SharedPreferencesUtil.getInstance(MainActivity.this,anchorListPreferencesFileName);
         getAnchorDataFromPreferencesFile();
 
 
         // 更新视图的UI坐标数据 ，里面有post方法
         updateImageViewUICoordinates();
+
+
 
         // 为anchor视图添加按键监听器
         addOnClickListenerForAnchorViews(mAnchor1);
@@ -152,26 +143,6 @@ public class MainActivity extends AppCompatActivity {
         addOnClickListenerForAnchorViews(mAnchor3);
         addOnClickListenerForAnchorViews(mAnchor4);
 
-
-        /************************ for test ******************************/
-        /******************* 测试点击图片产生相应功能 *******************/
-        /*View.OnTouchListener onTouchListener = new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        float x = event.getX();
-                        float y = event.getY();
-                        Toast.makeText(MainActivity.this, "x:" + x + "; y:" + y, Toast.LENGTH_SHORT).show();
-                        break;
-                    default:
-                        break;
-                }
-                return false;
-            }
-        };
-        mBoatVIew.setOnTouchListener(onTouchListener);*/
-        /************************ for test ******************************/
 
     }
 
@@ -200,6 +171,11 @@ public class MainActivity extends AppCompatActivity {
         mRopeDialView = findViewById(R.id.rope_dial_view);
 
         mPaintLayout = findViewById(R.id.paint_layout);
+
+        mPointer = findViewById(R.id.degree_pointer);
+        mBlank = findViewById(R.id.blank);
+
+
     }
 
     //该方法用于旋转UI中的View，转了
@@ -210,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG,"rope dial layout  axis : " + mRopeDialView.getLeft());
 
     }
+
 
     //将anchor装入list准备保存到文件中
     private void addAnchorIntoList(){
@@ -228,29 +205,22 @@ public class MainActivity extends AppCompatActivity {
     private void putAnchorDataIntoPreferencesFile(){
         //将4个anchor装入一个list中
         addAnchorIntoList();
-        String anchorListJsonString = gsonInMain.toJson(mAnchorList);
-        Log.d(TAG,"*** json in PUT *** : " + anchorListJsonString);
-        anchorListEditor = getSharedPreferences(anchorListPreferencesFileName,MODE_PRIVATE).edit();
-        // 将key与list绑定
-        anchorListEditor.putString(anchorListPreferencesBankKey,anchorListJsonString);
-        anchorListEditor.apply();
+        SharedPreferencesUtil.putListData(anchorListPreferencesBankKey,mAnchorList);
     }
 
     //该方法从preferences文件中获取anchor的数据
     private void getAnchorDataFromPreferencesFile(){
         mAnchorList = new ArrayList<>();
-        anchorListPreferences = getSharedPreferences(anchorListPreferencesFileName,MODE_PRIVATE);
-        String anchorListJsonString = anchorListPreferences.getString(anchorListPreferencesBankKey,"");
-        Log.d(TAG,anchorListJsonString);
         //从xml文件中获取anchorList
-        mAnchorList = gsonInMain.fromJson(anchorListJsonString,new TypeToken<List<Anchor>>(){}.getType());
+        mAnchorList = SharedPreferencesUtil.getListData(anchorListPreferencesBankKey,Anchor.class);
         //如果从文件中读取到了anchor数据就直接获取
-        if (mAnchorList != null){
+        if (mAnchorList.size() == 4){
             mAnchor1 = mAnchorList.get(0);
             mAnchor2 = mAnchorList.get(1);
             mAnchor3 = mAnchorList.get(2);
             mAnchor4 = mAnchorList.get(3);
             Log.d(TAG,"从xml文件获取数据成功");
+            Log.d(TAG,"" + mAnchor1.getLongitude());
         }else {
             Log.d(TAG,"xml文件不存在，新初始化数据");
             initAnchorModel();//创建anchor
@@ -350,7 +320,8 @@ public class MainActivity extends AppCompatActivity {
                 mAnchorMap.put(4,mAnchor4);
             }
         });
-        mBoatView.post(new Runnable() {
+
+        /*mBoatView.post(new Runnable() {
             @Override
             public void run() {
                 float viewWidth = mBoatView.getWidth();
@@ -360,7 +331,9 @@ public class MainActivity extends AppCompatActivity {
 
 
             }
-        });
+        });*/
+
+        //用到了绳盘的尺寸
         mRopeDialView.post(new Runnable() {
             @Override
             public void run() {
@@ -382,11 +355,10 @@ public class MainActivity extends AppCompatActivity {
                 updateRopeNode(boatAngleRadian,ropeDialCenterX,ropeDialCenterY,ropeDialWidth);
                 rotateViews(boatAngle,ropeDialCenterX,ropeDialCenterY);
 
-
-
             }
         });
 
+        //用到了船体视图的尺寸
         mBoatView.post(new Runnable() {
             @Override
             public void run() {
@@ -412,6 +384,15 @@ public class MainActivity extends AppCompatActivity {
                 int layoutY = mPaintLayout.getHeight();
                 paintLayoutScaleList.add(layoutX);
                 paintLayoutScaleList.add(layoutY);
+            }
+        });
+
+        mBlank.post(new Runnable() {
+            @Override
+            public void run() {
+                mBlankWidth = mBlank.getWidth();
+                Log.d(TAG,"$$$$width : " + mBlankWidth);
+                mPointer.setTranslationX(boatAngle * (mBlankWidth-40) / 20);
             }
         });
     }
@@ -588,7 +569,7 @@ public class MainActivity extends AppCompatActivity {
         * */
         mPaintLayout.setOnDragListener(new View.OnDragListener() {
             @Override
-            public boolean onDrag(View v, DragEvent event) {
+            public boolean onDrag(View v, final DragEvent event) {
                 //Log.d(TAG,"drag event run");
                 switch (event.getAction()) {
                     //开始拖动时
@@ -611,15 +592,13 @@ public class MainActivity extends AppCompatActivity {
                     }
                     case DragEvent.ACTION_DROP:{
                         //TODO 显示幽灵船
-                        mBoatShadowView.setVisibility(View.VISIBLE);
-                        mBoatView.setVisibility(View.INVISIBLE);
+
                         Log.e(TAG,"View被放下");
                         Log.d(TAG,"放下处 x : " + event.getX());
                         Log.d(TAG,"放下处 y : " + event.getY());
-                        int tranX = (int) (event.getX() - boatCenterX);
-                        int tranY = (int) (event.getY() - boatCenterY);
-                        mBoatShadowView.setTranslationX(tranX);
-                        mBoatShadowView.setTranslationY(tranY);
+                        final int tranX = (int) (event.getX() - boatCenterX);
+                        final int tranY = (int) (event.getY() - boatCenterY);
+
 
                         if (mBoatView.getRight() > paintLayoutScaleList.get(0) || mBoatView.getLeft() <= 0 || mBoatView.getTop() <= 0 || mBoatView.getBottom() > paintLayoutScaleList.get(1)){
                             Toast.makeText(MainActivity.this,"船体只能放置在地图内",Toast.LENGTH_SHORT).show();
@@ -641,6 +620,12 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void buttonOnClick() {
                                     boatMoveDialog.dismiss();
+                                    //按下确定按钮时，显示船的阴影，移除原来的实体船
+                                    mBoatShadowView.setVisibility(View.VISIBLE);
+                                    mBoatView.setVisibility(View.INVISIBLE);
+                                    //船阴影的位置是将原实体船进行移动的结果
+                                    mBoatShadowView.setTranslationX(tranX);
+                                    mBoatShadowView.setTranslationY(tranY);
                                 }
                             });
 
@@ -683,6 +668,7 @@ public class MainActivity extends AppCompatActivity {
                 boatRotateDialog.setDialogTipInfo("请输入船体旋转角度");
                 boatRotateDialog.setFirstLabel("角度: ");
                 boatRotateDialog.setSecondEditTextInvisible();
+
                 boatRotateDialog.setSureButtonOnClickListener(new MyConfigDialog.ButtonOnClickListener() {
                     @Override
                     public void buttonOnClick() {
@@ -701,7 +687,5 @@ public class MainActivity extends AppCompatActivity {
                 boatRotateDialog.show();
             }
         }));
-
-
     }
 }

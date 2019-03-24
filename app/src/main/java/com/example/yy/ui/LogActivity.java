@@ -24,12 +24,14 @@ import java.util.Set;
 
 public class LogActivity extends AppCompatActivity {
 
+    //用户名和密码输入框
     private EditText mLogInUserNameInput;
     private EditText mLogInPasswordInput;
-
+    //用户名和密码输入内容
     private String mLogInUserNameInputString;
     private String mLogInPasswordInputString;
 
+    //按键
     private CheckBox mSaveIdBox;
     private Button mRegisterButton;
     private Button mLogInButton;
@@ -39,14 +41,18 @@ public class LogActivity extends AppCompatActivity {
 
     private boolean rememberUserName;
     private String rememberedUserName;
-    private SharedPreferences logInRememberUserNamePreferences;
-    private SharedPreferences.Editor rememberUserNameEditor;
+    //Preferences文件名
     private String rememberUserNamePreferencesFile = "log_in_preferences";
+    //Preferences  KEY名 ，这两个key都是从上面那个文件读写信息的
     private String rememberUserNamePreferencesKey = "remember_username";
     private String rememberedUserNameKey = "remembered_username";
 
+
+    //下列perferences是从
+    //存储账户信息的文件及其key
     private String accountPreferencesFile;
     private String accountPreferencesKey;
+    //存储用户名的文件及其key
     private String userNamePreferencesFile;
     private String userNamePreferencesKey;
 
@@ -62,24 +68,24 @@ public class LogActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log);
 
+        //初始化视图对象
+        findViewByIds();
+
+        //获取sharedPreferences
         getPreferencesFileAndKey();
-
-        // CheckBox
-        mSaveIdBox = findViewById(R.id.save_id_checkbox);
-
-        // EditText设置
-        mLogInUserNameInput = findViewById(R.id.log_in_username_input);
-        mLogInPasswordInput = findViewById(R.id.log_in_password_input);
-
         // 为EditText设置偏好
-        logInRememberUserNamePreferences = getSharedPreferences(rememberUserNamePreferencesFile,MODE_PRIVATE);
-        rememberUserName = logInRememberUserNamePreferences.getBoolean(rememberUserNamePreferencesKey,false);
-        rememberedUserName = logInRememberUserNamePreferences.getString(rememberedUserNameKey,"");
+        SharedPreferencesUtil.getInstance(LogActivity.this,rememberUserNamePreferencesFile);
+        rememberUserName = (boolean)SharedPreferencesUtil.getData(rememberUserNamePreferencesKey,false);
+        rememberedUserName = (String)SharedPreferencesUtil.getData(rememberedUserNameKey,"");
+        //如果设置了记住账号，就直接显示账号
         if (rememberUserName){
             mLogInUserNameInput.setText(rememberedUserName);
             mLogInUserNameInputString = rememberedUserName;
             mSaveIdBox.setChecked(rememberUserName);
         }
+
+
+
 
         // 为EditText配置监听器watcher
         TextWatcher LogInUserNameInputWatcher = new TextWatcher() {
@@ -122,7 +128,7 @@ public class LogActivity extends AppCompatActivity {
 
 
         // "注册" 按钮配置
-        mRegisterButton = findViewById(R.id.register_button);
+
         mRegisterButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -132,19 +138,21 @@ public class LogActivity extends AppCompatActivity {
         });
 
         // "登录" 按钮配置
-        mLogInButton = findViewById(R.id.log_in_button);
+
         mLogInButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 if (checkLogInMsg()){
-                        rememberUserNameEditor = getSharedPreferences(rememberUserNamePreferencesFile,MODE_PRIVATE).edit();
+                        //rememberUserNameEditor = getSharedPreferences(rememberUserNamePreferencesFile,MODE_PRIVATE).edit();
                     if (mSaveIdBox.isChecked()){
-                        rememberUserNameEditor.putBoolean(rememberUserNamePreferencesKey,true);
-                        rememberUserNameEditor.putString(rememberedUserNameKey,mLogInUserNameInputString);
-                    }else {
+                        SharedPreferencesUtil.putData(rememberUserNamePreferencesKey,true);
+                        SharedPreferencesUtil.putData(rememberedUserNameKey,mLogInUserNameInputString);
+                        /*rememberUserNameEditor.putBoolean(rememberUserNamePreferencesKey,true);
+                        rememberUserNameEditor.putString(rememberedUserNameKey,mLogInUserNameInputString);*/
+                    }/*else {
                         rememberUserNameEditor.clear();
                     }
-                    rememberUserNameEditor.apply();
+                    rememberUserNameEditor.apply();*/
 
                     Intent intent = new Intent(LogActivity.this,MainActivity.class);
                     startActivity(intent);
@@ -152,6 +160,19 @@ public class LogActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    private void findViewByIds(){
+        // CheckBox初始化
+        mSaveIdBox = findViewById(R.id.save_id_checkbox);
+
+        // EditText初始化
+        mLogInUserNameInput = findViewById(R.id.log_in_username_input);
+        mLogInPasswordInput = findViewById(R.id.log_in_password_input);
+        //button初始化
+        mRegisterButton = findViewById(R.id.register_button);
+        mLogInButton = findViewById(R.id.log_in_button);
+
     }
 
     private void getPreferencesFileAndKey(){
@@ -163,6 +184,7 @@ public class LogActivity extends AppCompatActivity {
 
     private boolean checkLogInMsg(){
         // 从SharedPreferences文件中读取用户数据
+
         // accountList读取
         logInAccountListPreferences = getSharedPreferences(accountPreferencesFile,MODE_PRIVATE);
         logInAccountListJsonString = logInAccountListPreferences.getString(accountPreferencesKey,"");
@@ -172,6 +194,7 @@ public class LogActivity extends AppCompatActivity {
         logInUserNameSetPreferences = getSharedPreferences(userNamePreferencesFile,MODE_PRIVATE);
         logInUserNameSetJsonString = logInUserNameSetPreferences.getString(userNamePreferencesKey,"");
         logInUserNameSet = mLogInGson.fromJson(logInUserNameSetJsonString,new TypeToken<Set<String>>(){}.getType());
+
 
         if ( logInUserNameSet == null || (! logInUserNameSet.contains(mLogInUserNameInputString))){
             Toast.makeText(LogActivity.this,"该用户名不存在",Toast.LENGTH_SHORT).show();

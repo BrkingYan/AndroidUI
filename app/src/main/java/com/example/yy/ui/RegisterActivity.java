@@ -82,9 +82,9 @@ public class RegisterActivity extends AppCompatActivity  {
         /* 视图相关成员 */
 
         // EditText 及相关配置
-        mRegisterUserNameInput = (EditText) findViewById(R.id.register_userName_input);
-        mRegisterPasswordInput = (EditText) findViewById(R.id.register_password_input);
-        mRegisterPasswordAgainInput = (EditText) findViewById(R.id.register_password_again_input);
+        mRegisterUserNameInput =  findViewById(R.id.register_userName_input);
+        mRegisterPasswordInput = findViewById(R.id.register_password_input);
+        mRegisterPasswordAgainInput =  findViewById(R.id.register_password_again_input);
 
 
         //禁止输入空格
@@ -272,6 +272,7 @@ public class RegisterActivity extends AppCompatActivity  {
         builder.setNegativeButton("继续注册", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
                 restartActivity();
             }
         });
@@ -279,6 +280,7 @@ public class RegisterActivity extends AppCompatActivity  {
         builder.setPositiveButton("去登录", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
                 finish();
             }
         });
